@@ -120,6 +120,8 @@ small {
   font-size: 80%;
 }
 
+
+
 sub,
 sup {
   position: relative;
@@ -282,6 +284,7 @@ table {
   .table td,
   .table th {
     background-color: #fff !important;
+
   }
   .btn > .caret,
   .dropup > .btn > .caret {
@@ -293,6 +296,21 @@ table {
   .table {
     border-collapse: collapse !important;
   }
+
+  
+
+    .tdcart {
+        vertical-align: middle;
+        padding: 10px;
+        font-size: 14px;
+        
+        text-align: right;
+        border-top: 2px solid #56433D;
+        border-bottom: 2px solid #56433D;
+        border-right: 2px solid #56433D;
+        background:red;
+    }
+
   .table-bordered th,
   .table-bordered td {
     border: 1px solid #ddd !important;
@@ -328,6 +346,7 @@ textarea {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+
 }
 
 button,
@@ -588,7 +607,9 @@ ol {
     text-shadow: 0 0 2px black;
 }
 
-.video1{
+
+
+.video1 {
     margin-top: -80px;
 }
 
@@ -1472,12 +1493,18 @@ table {
 }
 
 th {
-  text-align: left;
+    padding: 10px 20px;
+    background: white;
+    text-shadow:red 0px 0px 3px;
+    border-right: 2px solid;
+    font-size: 0.9em;
+    color: #c91a07;
 }
 
 .table {
-  width: 100%;
-  margin-bottom: 20px;
+    border-spacing: 0 10px;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: bold;
 }
 
 .table thead > tr > th,
@@ -1717,6 +1744,7 @@ label {
   display: inline-block;
   margin-bottom: 5px;
   font-weight: bold;
+  color:red;
 }
 
 input[type="search"] {
@@ -3883,10 +3911,16 @@ textarea.input-group-sm > .input-group-btn > .btn {
 .nav > li > a {
   position: relative;
   display: block;
-  padding: 5px 5px;
+  padding: 3px 3px;
  
 }
 
+.game-list{
+    display: flex;
+}
+.cart{
+    margin-top:15px;
+}
 .nav > li > a:hover,
 .nav > li > a:focus {
   text-decoration: none;

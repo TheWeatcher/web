@@ -3,12 +3,12 @@
 
 <h2> {{post_1.title}} </h2>
 <p> {{post_1.content|linebreaksbr}} </p>  
-<p><a href="{% url 'blog' %} ">Назад</a></p>
+
 
 {% if post_1.image and post_1.image.url != '/media/temp.jpg' %}
-   <img src="{{ post_1.image.url }}" alt="Картинка" widht="300" height="200"/>
+   <img src="{{ post_1.image.url }}" alt="Картинка" widht="450" height="350"/>
 {% endif %}
-
+<p><a href="{% url 'blog' %} ">Назад</a></p>
 {% if user.is_authenticated  %}
     <h3>Добавить комментарий</h3>
     <form method="POST">{% csrf_token %}

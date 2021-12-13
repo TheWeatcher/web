@@ -2,17 +2,24 @@
 Definition of views.
 """
 
-from django.shortcuts import render, redirect
-from django.http import HttpRequest
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
+from django.http import HttpRequest, HttpResponseRedirect, HttpResponseNotFound
 from django.template import RequestContext
 from datetime import datetime
-from .forms import AnketaForm
 from django.contrib.auth.forms import UserCreationForm
 from django.db import models
 from .models import Blog
+from .models import Category, Game
+from orders.models import Order, OrderItem
+from cart.forms import CartAddGameForm
+from django.contrib.auth.models import User
 from .models import Comment
 from .forms import CommentForm
-from .forms import BlogForm
+from .forms import BlogForm, GameForm
+from django.views.generic import DetailView, View
+
+
 
 def home(request):
     """Renders the home page."""
@@ -63,37 +70,7 @@ def links(request):
             'year':datetime.now().year,
         }
     )
-def anketa(request):
-    assert isinstance(request, HttpRequest)
-    data = None
-    gender = {'1': 'Steam', '2': 'Gog', '3': 'Epic games store'}
-    internet = {'1': 'Не было проблем', '2': 'Ключ долго не приходил',
-               '3': 'Пришел ключ не от той игры', '4': 'Ключ оказался нерабочим'}
-    if request.method == 'POST':
-        form = AnketaForm(request.POST)
-        if form.is_valid():
-            data = dict()
-            data['name'] = form.cleaned_data['name']
-            data['city'] = form.cleaned_data['city']
-            data['gender'] = gender[form.cleaned_data['gender'] ]
-            data['internet'] = internet[form.cleaned_data['internet'] ]
-            if(form.cleaned_data['notice'] == True):
-                data['notice'] = 'Да'
-            else:
-                data['notice'] = 'Нет'
-            data['email'] = form.cleaned_data['email']
-            data['message'] = form.cleaned_data['message']
-            form = None
-    else:
-        form = AnketaForm()
-    return render(
-        request,
-        'app/anketa.html',
-        {
-            'form': form,
-            'data': data
-            }
-        )
+
 def registration(request):
     if request.method == "POST":
         regform = UserCreationForm(request.POST)
@@ -114,6 +91,7 @@ def registration(request):
         request,
         'app/registration.html',
         {
+            'title':'Регистрация',
             'regform': regform,
             'year': datetime.now().year,
          }
@@ -127,7 +105,7 @@ def blog (request):
         request,
         'app/blog.html',
         {
-            'title': 'Ваши отзывы',
+            'title': 'Новости',
             'posts': posts,
             'year':datetime.now().year,
             }
@@ -156,6 +134,7 @@ def blogpost(request, parametr):
         request,
         'app/blogpost.html',
         {
+            'title':'Новости',
             'post_1': post_1, 
             'comments': comments,
             'form': form,
@@ -187,14 +166,126 @@ def newpost(request):
             'year': datetime.now().year,
             }
         )
-def videopost(request):
+
+
+def game_list(request, category_slug=None):
+    category = None
+    categories = Category.objects.all()
+    games = Game.objects.filter(available=True)
+    if category_slug:
+        category = get_object_or_404(Category, slug=category_slug)
+        games = games.filter(category=category)
+    return render(request, 'app/game_list.html',
+                  {'title':'Магазин','category': category, 'categories': categories,
+                   'games': games})
+   
+
+def game_detail(request, id, slug):
+    game = get_object_or_404(Game, id=id, slug=slug, available=True)
+    cart_game_form = CartAddGameForm()
+    return render(request, 'app/game_detail.html', {'title':'Описание игры','game': game, 'cart_game_form': cart_game_form})
+
+def newgame(request):
+    assert isinstance(request, HttpRequest)
+
+    if request.method == "POST":
+        gameform = GameForm(request.POST, request.FILES)
+        if gameform.is_valid():
+            game_f = gameform.save(commit=False)
+            game_f.created = datetime.now()
+            game_f.save()
+
+            return redirect('home')
+    else:
+        gameform = GameForm()
+
+    return render(
+        request,
+        'app/newgame.html',
+        {
+            'gameform': gameform,
+            'title': 'Добавить товар',
+            'year': datetime.now().year,
+            }
+        )
+
+def my_orders(request):
     """Renders the about page."""
+    
+    if Order.objects.filter(nickname=request.user):
+        
+        game_ordered = OrderItem.objects.filter(order__nickname=request.user)
+        assert isinstance(request, HttpRequest)
+        return render(
+            request,
+            'app/my_orders.html', {'title':'Заказы','game_ordered': game_ordered,}
+            )
+    else:
+        return redirect('empty')
+
+def empty(request):
+    """Renders the home page."""
     assert isinstance(request, HttpRequest)
     return render(
         request,
-        'app/videopost.html',
+        'app/empty.html',
         {
-            'title':'Видео',
+            'title':'Корзина',
             'year':datetime.now().year,
         }
     )
+
+
+def users(request):
+    users_list = User.objects.all()
+    
+    context = {
+            "title": "Список пользователей",
+            "users_list": users_list,
+
+        }
+    return render(request, 'app/users.html', context)
+
+def edit(request, id):
+    try:
+        user = User.objects.get(id=id)
+ 
+        if request.method == "POST":
+            user.is_staff = request.POST.get("is_staff")
+            user.save()
+            return redirect("users")
+        else:
+            return render(request, "app/edit.html", {'title':'Извенение пользовател',"user": user})
+    except User.DoesNotExist:
+        return HttpResponseNotFound("Данного пошльзователя не существует>")
+
+def delete(request, id):
+    try:
+        user = User.objects.get(id=id)
+        user.delete()
+        return redirect("users")
+    except User.DoesNotExist:
+        return HttpResponseNotFound("Пользователя не существует")
+
+def edit_order(request, id):
+    try:
+        order = Order.objects.get(id=id)
+ 
+        if request.method == "POST":
+            order.paid = request.POST.get("paid")
+            order.save()
+            return redirect("orders")
+        else:
+            return render(request, "app/edit_order.html", {'title':'Изменение статуса заказа',"order": order})
+    except Order.DoesNotExist:
+        return HttpResponseNotFound("Данного пользователя не существует")
+
+def orders(request):
+    """Renders the about page."""
+
+    
+    o = Order.objects.all()
+    game_ordered = OrderItem.objects.raw('SELECT orders_orderitem.order_id, order_id, game_id, price, created, quantity, orders_order.id,  paid FROM orders_orderitem JOIN orders_order ON orders_orderitem.order_id = orders_order.id')
+    assert isinstance(request, HttpRequest)
+    return render(request,'app/orders.html', {'title':'Заказы','game_ordered': game_ordered, 'orders': orders,}
+            )
